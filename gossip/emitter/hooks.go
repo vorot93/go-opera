@@ -72,7 +72,7 @@ func (em *Emitter) OnEventConnected(e inter.EventPayloadI) {
 	delete(em.offlineValidators, e.Creator())
 }
 
-func (em *Emitter) OnEventConfirmed(he inter.EventI) {
+func (em *Emitter) OnEventConfirmed(he inter.EventIWithPayloadMeta) {
 	if !em.isValidator() {
 		return
 	}

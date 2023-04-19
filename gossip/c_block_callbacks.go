@@ -127,7 +127,7 @@ func consensusCallbackBeginBlockFn(
 
 		return lachesis.BlockCallbacks{
 			ApplyEvent: func(_e dag.Event) {
-				e := _e.(inter.EventI)
+				e := _e.(inter.EventIWithPayloadMeta)
 				if cBlock.Atropos == e.ID() {
 					atroposTime = e.MedianTime()
 					atroposDegenerate = false

@@ -224,7 +224,7 @@ func TestEventRPCMarshaling(t *testing.T) {
 	t.Run("Event", func(t *testing.T) {
 		require := require.New(t)
 		for i := 0; i < 3; i++ {
-			var event0 EventI = &FakeEvent(i, i, i, i != 0).Event
+			var event0 EventIWithPayloadMeta = &FakeEvent(i, i, i, i != 0).Event
 			mapping := RPCMarshalEvent(event0)
 			bb, err := json.Marshal(mapping)
 			require.NoError(err)

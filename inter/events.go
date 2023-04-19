@@ -86,7 +86,7 @@ func (ee EventPayloads) Less(i, j int) bool {
 }
 
 // EventIs is a ordered slice of events.
-type EventIs []EventI
+type EventIs []EventIWithPayloadMeta
 
 // String returns human readable representation.
 func (ee EventIs) String() string {
@@ -94,7 +94,7 @@ func (ee EventIs) String() string {
 }
 
 // Add appends hash to the slice.
-func (ee *EventIs) Add(e ...EventI) {
+func (ee *EventIs) Add(e ...EventIWithPayloadMeta) {
 	*ee = append(*ee, e...)
 }
 

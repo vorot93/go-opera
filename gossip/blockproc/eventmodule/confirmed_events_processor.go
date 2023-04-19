@@ -26,7 +26,7 @@ type ValidatorEventsProcessor struct {
 	validatorHighestEvents inter.EventIs
 }
 
-func (p *ValidatorEventsProcessor) ProcessConfirmedEvent(e inter.EventI) {
+func (p *ValidatorEventsProcessor) ProcessConfirmedEvent(e inter.EventIWithPayloadMeta) {
 	creatorIdx := p.es.Validators.GetIdx(e.Creator())
 	prev := p.validatorHighestEvents[creatorIdx]
 	if prev == nil || e.Seq() > prev.Seq() {

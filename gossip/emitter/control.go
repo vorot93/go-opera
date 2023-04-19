@@ -38,7 +38,7 @@ func eventMetric(orig ancestor.Metric, seq idx.Event) ancestor.Metric {
 	return metric
 }
 
-func (em *Emitter) isAllowedToEmit(e inter.EventI, eTxs bool, metric ancestor.Metric, selfParent *inter.Event) bool {
+func (em *Emitter) isAllowedToEmit(e inter.EventIWithPayloadMeta, eTxs bool, metric ancestor.Metric, selfParent *inter.Event) bool {
 	passedTime := e.CreationTime().Time().Sub(em.prevEmittedAtTime)
 	if passedTime < 0 {
 		passedTime = 0

@@ -52,7 +52,7 @@ const (
 
 type callbacks struct {
 	buildEvent       func(e *inter.MutableEventPayload)
-	onEventConfirmed func(e inter.EventI)
+	onEventConfirmed func(e inter.EventIWithPayloadMeta)
 }
 
 type testEnv struct {
@@ -113,7 +113,7 @@ type testConfirmedEventsProcessor struct {
 	env *testEnv
 }
 
-func (p testConfirmedEventsProcessor) ProcessConfirmedEvent(e inter.EventI) {
+func (p testConfirmedEventsProcessor) ProcessConfirmedEvent(e inter.EventIWithPayloadMeta) {
 	if p.env.callback.onEventConfirmed != nil {
 		p.env.callback.onEventConfirmed(e)
 	}
@@ -264,7 +264,7 @@ func (env *testEnv) ApplyMPs(spent time.Duration, mps ...inter.MisbehaviourProof
 		}
 	}
 	confirmed := false
-	env.callback.onEventConfirmed = func(_e inter.EventI) {
+	env.callback.onEventConfirmed = func(_e inter.EventIWithPayloadMeta) {
 		// ensure that not only MPs were confirmed, but also no new MPs will be confirmed in future
 		if _e.AnyMisbehaviourProofs() && _e.Epoch() == lastEpoch {
 			confirmed = true

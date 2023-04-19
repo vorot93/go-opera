@@ -441,14 +441,14 @@ func (h *handler) makeDagProcessor(checkers *eventcheck.Checkers) *dagprocessor.
 		return nil
 	}
 	bufferedCheck := func(_e dag.Event, _parents dag.Events) error {
-		e := _e.(inter.EventI)
+		e := _e.(inter.EventIWithPayloadMeta)
 		parents := make(inter.EventIs, len(_parents))
 		for i := range _parents {
-			parents[i] = _parents[i].(inter.EventI)
+			parents[i] = _parents[i].(inter.EventIWithPayloadMeta)
 		}
-		var selfParent inter.EventI
+		var selfParent inter.EventIWithPayloadMeta
 		if e.SelfParent() != nil {
-			selfParent = parents[0].(inter.EventI)
+			selfParent = parents[0].(inter.EventIWithPayloadMeta)
 		}
 		if err := checkers.Parentscheck.Validate(e, parents); err != nil {
 			return err
@@ -958,7 +958,7 @@ func (h *handler) handleEvents(p *peer, events dag.Events, ordered bool) {
 		if e.Lamport() <= maxLamport {
 			notTooHigh = append(notTooHigh, e)
 		}
-		if now.Sub(e.(inter.EventI).CreationTime().Time()) < 10*time.Minute {
+		if now.Sub(e.(inter.EventIWithPayloadMeta).CreationTime().Time()) < 10*time.Minute {
 			h.syncStatus.MarkMaybeSynced()
 		}
 	}

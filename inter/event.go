@@ -25,6 +25,10 @@ type EventI interface {
 
 	HashToSign() hash.Hash
 	Locator() EventLocator
+}
+
+type EventIWithPayloadMeta interface {
+	EventI
 
 	// Payload-related fields
 
@@ -58,7 +62,7 @@ func AsSignedEventLocator(e EventPayloadI) SignedEventLocator {
 }
 
 type EventPayloadI interface {
-	EventI
+	EventIWithPayloadMeta
 	Sig() Signature
 
 	Txs() types.Transactions
@@ -147,7 +151,7 @@ func (e *Event) HashToSign() hash.Hash {
 	return *e._locatorHash
 }
 
-func asLocator(basehash hash.Hash, e EventI) EventLocator {
+func asLocator(basehash hash.Hash, e EventIWithPayloadMeta) EventLocator {
 	return EventLocator{
 		BaseHash:    basehash,
 		NetForkID:   e.NetForkID(),
@@ -271,7 +275,7 @@ func calcEventID(h hash.Hash) (id [24]byte) {
 	return id
 }
 
-func calcEventHashes(ser []byte, e EventI) (locator hash.Hash, base hash.Hash) {
+func calcEventHashes(ser []byte, e EventIWithPayloadMeta) (locator hash.Hash, base hash.Hash) {
 	base = hash.Of(ser)
 	if e.Version() < 1 {
 		return base, base

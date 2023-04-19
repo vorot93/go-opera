@@ -420,7 +420,7 @@ func (e *MutableEventPayload) DecodeRLP(src *rlp.Stream) error {
 }
 
 // RPCMarshalEvent converts the given event to the RPC output .
-func RPCMarshalEvent(e EventI) map[string]interface{} {
+func RPCMarshalEvent(e EventIWithPayloadMeta) map[string]interface{} {
 	return map[string]interface{}{
 		"version":        hexutil.Uint64(e.Version()),
 		"networkVersion": hexutil.Uint64(e.NetForkID()),
@@ -449,7 +449,7 @@ func RPCMarshalEvent(e EventI) map[string]interface{} {
 }
 
 // RPCUnmarshalEvent converts the RPC output to the header.
-func RPCUnmarshalEvent(fields map[string]interface{}) EventI {
+func RPCUnmarshalEvent(fields map[string]interface{}) EventIWithPayloadMeta {
 	mustBeUint64 := func(name string) uint64 {
 		s := fields[name].(string)
 		return hexutil.MustDecodeUint64(s)
