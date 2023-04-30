@@ -3,6 +3,7 @@ package inter
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"math/big"
 	"math/rand"
@@ -357,6 +358,114 @@ func FakeEvent(txsNum, mpsNum, bvsNum int, ersNum bool) *EventPayload {
 				Data:       randBytes(r, r.Intn(300)),
 				AccessList: randAccessList(r, 300, 300),
 				V:          big.NewInt(int64(r.Intn(0xffffffff))),
+				R:          h.Big(),
+				S:          h.Big(),
+			})
+			txs = append(txs, tx)
+		}
+	}
+	mps := []MisbehaviourProof{}
+	for i := 0; i < mpsNum; i++ {
+		// MPs are serialized with RLP, so no need to test extensively
+		mps = append(mps, MisbehaviourProof{
+			EventsDoublesign: &EventsDoublesign{
+				Pair: [2]SignedEventLocator{SignedEventLocator{}, SignedEventLocator{}},
+			},
+			BlockVoteDoublesign: nil,
+			WrongBlockVote:      nil,
+			EpochVoteDoublesign: nil,
+			WrongEpochVote:      nil,
+		})
+	}
+	bvs := LlrBlockVotes{}
+	if bvsNum > 0 {
+		bvs.Start = 1 + idx.Block(rand.Intn(1000))
+		bvs.Epoch = 1 + idx.Epoch(rand.Intn(1000))
+	}
+	for i := 0; i < bvsNum; i++ {
+		bvs.Votes = append(bvs.Votes, randHash(r))
+	}
+	ers := LlrEpochVote{}
+	if ersNum {
+		ers.Epoch = 1 + idx.Epoch(rand.Intn(1000))
+		ers.Vote = randHash(r)
+	}
+
+	random.SetTxs(txs)
+	random.SetMisbehaviourProofs(mps)
+	random.SetEpochVote(ers)
+	random.SetBlockVotes(bvs)
+	random.SetPayloadHash(CalcPayloadHash(random))
+
+	parent := MutableEventPayload{}
+	parent.SetVersion(1)
+	parent.SetLamport(random.Lamport() - 500)
+	parent.SetEpoch(random.Epoch())
+	random.SetParents(hash.Events{parent.Build().ID()})
+
+	return random.Build()
+}
+
+func FakeEventDeterministic(txsNum, mpsNum, bvsNum int, ersNum bool) *EventPayload {
+	random := &MutableEventPayload{}
+	random.SetVersion(1)
+	random.SetNetForkID(uint16(1))
+	random.SetLamport(1000)
+	random.SetExtra([]byte("hello"))
+	random.SetSeq(idx.Event(228))
+	random.SetCreator(idx.ValidatorID(42))
+	random.SetFrame(idx.Frame(523412))
+	random.SetCreationTime(Timestamp(1681874281))
+	random.SetMedianTime(Timestamp(1681874279))
+	random.SetGasPowerUsed(10_000_000)
+	random.SetGasPowerLeft(GasPowerLeft{[2]uint64{50_000, 50_000}})
+	txs := types.Transactions{}
+	addr := common.HexToAddress("0x431e81E5dfB5A24541b5Ff8762bDEF3f32F96354")
+	for i := 0; i < txsNum; i++ {
+		h := hash.Hash{}
+		value := big.NewInt(0x102045464748)
+		data := common.FromHex(fmt.Sprintf("baadcafe%02s", i))
+
+		if i%3 == 0 {
+			tx := types.NewTx(&types.LegacyTx{
+				Nonce:    uint64(i),
+				GasPrice: new(big.Int).SetBytes([]byte{0x55, 0x56, 0x57, 0x58}),
+				Gas:      21_000,
+				To:       nil,
+				Value:    value,
+				Data:     data,
+				V:        big.NewInt(1),
+				R:        h.Big(),
+				S:        h.Big(),
+			})
+			txs = append(txs, tx)
+		} else if i%3 == 1 {
+			tx := types.NewTx(&types.AccessListTx{
+				ChainID:    big.NewInt(1),
+				Nonce:      uint64(i),
+				GasPrice:   big.NewInt(42_000),
+				Gas:        21_000,
+				To:         &addr,
+				Value:      value,
+				Data:       data,
+				AccessList: nil,
+				V:          big.NewInt(int64(0xffffffff)),
+				R:          h.Big(),
+				S:          h.Big(),
+			})
+			txs = append(txs, tx)
+		} else {
+			tx := types.NewTx(&types.DynamicFeeTx{
+				ChainID:    big.NewInt(1),
+				Nonce:      uint64(i),
+				GasTipCap:  big.NewInt(1_000),
+				GasFeeCap:  big.NewInt(42_000),
+				Gas:        21_000,
+				To:         &addr,
+				Value:      value,
+				Data:       data,
+				AccessList: nil,
+				V:          big.NewInt(int64(0xffffffff)),
 				R:          h.Big(),
 				S:          h.Big(),
 			})
