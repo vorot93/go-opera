@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fantom-foundation/lachesis-base/inter/idx"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
 )
@@ -17,6 +18,67 @@ type PublicAbftAPI struct {
 // NewPublicAbftAPI creates a new SFC protocol API.
 func NewPublicAbftAPI(b Backend) *PublicAbftAPI {
 	return &PublicAbftAPI{b}
+}
+
+type EventInfo struct {
+	ID           common.Hash    `json:"id"`
+	GasPowerLeft GasPowerLeft   `json:"gasPowerLeft"`
+	Time         hexutil.Uint64 `json:"time"`
+}
+
+type ValidatorEpochState struct {
+	GasRefund      hexutil.Uint64 `json:"gasRefund"`
+	PrevEpochEvent EventInfo      `json:"prevEpochEvent"`
+}
+
+type GasPowerLeft [2]hexutil.Uint64
+
+func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNumber) (map[string]interface{}, error) {
+	_, es, err := s.b.GetEpochBlockState(ctx, epoch)
+	if err != nil {
+		return nil, err
+	}
+	if es == nil {
+		return nil, nil
+	}
+
+	validators := map[hexutil.Uint64]interface{}{}
+	profiles := es.ValidatorProfiles
+	for _, vid := range es.Validators.IDs() {
+		validators[hexutil.Uint64(vid)] = map[string]interface{}{
+			"weight": (*hexutil.Big)(profiles[vid].Weight),
+			"pubkey": profiles[vid].PubKey.String(),
+		}
+	}
+
+	validator_state := make([]ValidatorEpochState, len(es.ValidatorStates))
+	for i, vs := range es.ValidatorStates {
+		gas_power_left := GasPowerLeft{}
+		for j, gas := range vs.PrevEpochEvent.GasPowerLeft.Gas {
+			gas_power_left[j] = hexutil.Uint64(gas)
+		}
+		validator_state[i] = ValidatorEpochState{
+			GasRefund: hexutil.Uint64(vs.GasRefund),
+			PrevEpochEvent: EventInfo{
+				ID:           common.Hash(vs.PrevEpochEvent.ID),
+				GasPowerLeft: gas_power_left,
+				Time:         hexutil.Uint64(vs.PrevEpochEvent.Time),
+			},
+		}
+	}
+
+	res := map[string]interface{}{
+		"epoch":              hexutil.Uint64(epoch),
+		"epoch_start":        hexutil.Uint64(es.EpochStart),
+		"prev_epoch_start":   hexutil.Uint64(es.PrevEpochStart),
+		"epoch_state_root":   es.EpochStateRoot.String(),
+		"validators":         nil,
+		"validator_profiles": validators,
+		"validator_state":    validator_state,
+	}
+
+	return res, nil
+
 }
 
 func (s *PublicAbftAPI) GetValidators(ctx context.Context, epoch rpc.BlockNumber) (map[hexutil.Uint64]interface{}, error) {
