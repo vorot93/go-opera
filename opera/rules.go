@@ -112,9 +112,9 @@ type BlocksRules struct {
 }
 
 type Upgrades struct {
-	Berlin bool
-	London bool
-	Llr    bool
+	Berlin bool `json:"berlin"`
+	London bool `json:"london"`
+	Llr    bool `json:"llr"`
 }
 
 type UpgradeHeight struct {

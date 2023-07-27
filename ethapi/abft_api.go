@@ -72,6 +72,30 @@ func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNu
 		validators[hexutil.Uint64(k)] = hexutil.Uint64(v)
 	}
 
+	r := es.Rules
+	rules := map[string]interface{}{
+		"rlp": map[string]interface{}{
+			"name":      r.Name,
+			"networkId": hexutil.Uint64(r.NetworkID),
+			"dag": map[string]interface{}{
+				"maxParents":     hexutil.Uint64(r.Dag.MaxParents),
+				"maxFreeParents": hexutil.Uint64(r.Dag.MaxFreeParents),
+				"maxExtraData":   hexutil.Uint64(r.Dag.MaxExtraData),
+			},
+			"epochs": map[string]interface{}{
+				"maxEpochGas":      hexutil.Uint64(r.Epochs.MaxEpochGas),
+				"maxEpochDuration": hexutil.Uint64(r.Epochs.MaxEpochDuration),
+			},
+			"blocks": map[string]interface{}{
+				"maxBlockGas":              hexutil.Uint64(r.Blocks.MaxBlockGas),
+				"maxEmptyBlockSkipPeriods": hexutil.Uint64(r.Blocks.MaxEmptyBlockSkipPeriod),
+			},
+		},
+		"upgrades": r.Upgrades,
+	}
+
+	_ = rules
+
 	res := map[string]interface{}{
 		"epoch":             hexutil.Uint64(epoch),
 		"epochStart":        hexutil.Uint64(es.EpochStart),
@@ -80,6 +104,7 @@ func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNu
 		"validators":        validators,
 		"validatorStates":   validatorState,
 		"validatorProfiles": validatorProfiles,
+		"rules":             rules,
 	}
 
 	return res, nil
