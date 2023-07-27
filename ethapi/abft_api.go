@@ -3,6 +3,7 @@ package ethapi
 import (
 	"context"
 
+	"github.com/Fantom-foundation/go-opera/opera"
 	"github.com/Fantom-foundation/lachesis-base/inter/idx"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -29,6 +30,62 @@ type EventInfo struct {
 type ValidatorEpochState struct {
 	GasRefund      hexutil.Uint64 `json:"gasRefund"`
 	PrevEpochEvent EventInfo      `json:"prevEpochEvent"`
+}
+
+type DagRules struct {
+	MaxParents     hexutil.Uint64 `json:"maxParents"`
+	MaxFreeParents hexutil.Uint64 `json:"maxFreeParents"`
+	MaxExtraData   hexutil.Uint64 `json:"maxExtraData"`
+}
+
+type EpochRules struct {
+	MaxEpochGas      hexutil.Uint64 `json:"maxEpochGas"`
+	MaxEpochDuration hexutil.Uint64 `json:"maxEpochDuration"`
+}
+
+type BlocksRules struct {
+	MaxBlockGas             hexutil.Uint64 `json:"maxBlockGas"`
+	MaxEmptyBlockSkipPeriod hexutil.Uint64 `json:"maxEmptyBlockSkipPeriod"`
+}
+
+type RulesRLP struct {
+	Name      string         `json:"name"`
+	NetworkID hexutil.Uint64 `json:"networkId"`
+	Dag       DagRules       `json:"dag"`
+	Epochs    EpochRules     `json:"epochs"`
+	Blocks    BlocksRules    `json:"blocks"`
+	Economy   EconomyRules   `json:"economy"`
+}
+
+type GasRules struct {
+	MaxEventGas          hexutil.Uint64 `json:"maxEventGas"`
+	EventGas             hexutil.Uint64 `json:"eventGas"`
+	ParentGas            hexutil.Uint64 `json:"parentGas"`
+	ExtraDataGas         hexutil.Uint64 `json:"extraDataGas"`
+	BlockVotesBaseGas    hexutil.Uint64 `json:"blockVotesBaseGas"`
+	BlockVoteGas         hexutil.Uint64 `json:"blockVoteGas"`
+	EpochVoteGas         hexutil.Uint64 `json:"epochVoteGas"`
+	MisbehaviourProofGas hexutil.Uint64 `json:"misbehaviourProofGas"`
+}
+
+type EconomyRules struct {
+	BlockMissedSlack hexutil.Uint64 `json:"blockMissedSlack"`
+	Gas              GasRules       `json:"gas"`
+	MinGasPrice      *hexutil.Big   `json:"minGasPrice"`
+	ShortGasPower    GasPowerRules  `json:"shortGasPower"`
+	LongGasPower     GasPowerRules  `json:"longGasPower"`
+}
+
+type GasPowerRules struct {
+	AllocPerSec        hexutil.Uint64 `json:"allocPerSec"`
+	MaxAllocPeriod     hexutil.Uint64 `json:"maxAllocPeriod"`
+	StartupAllocPeriod hexutil.Uint64 `json:"startupAllocPeriod"`
+	MinStartupGas      hexutil.Uint64 `json:"minStartupGas"`
+}
+
+type Rules struct {
+	Rlp      RulesRLP       `json:"rlp"`
+	Upgrades opera.Upgrades `json:"upgrades"`
 }
 
 type GasPowerLeft [2]hexutil.Uint64
@@ -73,28 +130,52 @@ func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNu
 	}
 
 	r := es.Rules
-	rules := map[string]interface{}{
-		"rlp": map[string]interface{}{
-			"name":      r.Name,
-			"networkId": hexutil.Uint64(r.NetworkID),
-			"dag": map[string]interface{}{
-				"maxParents":     hexutil.Uint64(r.Dag.MaxParents),
-				"maxFreeParents": hexutil.Uint64(r.Dag.MaxFreeParents),
-				"maxExtraData":   hexutil.Uint64(r.Dag.MaxExtraData),
+	rules := Rules{
+		Rlp: RulesRLP{
+			Name:      r.Name,
+			NetworkID: hexutil.Uint64(r.NetworkID),
+			Dag: DagRules{
+				MaxParents:     hexutil.Uint64(r.Dag.MaxParents),
+				MaxFreeParents: hexutil.Uint64(r.Dag.MaxFreeParents),
+				MaxExtraData:   hexutil.Uint64(r.Dag.MaxExtraData),
 			},
-			"epochs": map[string]interface{}{
-				"maxEpochGas":      hexutil.Uint64(r.Epochs.MaxEpochGas),
-				"maxEpochDuration": hexutil.Uint64(r.Epochs.MaxEpochDuration),
+			Epochs: EpochRules{
+				MaxEpochGas:      hexutil.Uint64(r.Epochs.MaxEpochGas),
+				MaxEpochDuration: hexutil.Uint64(r.Epochs.MaxEpochDuration),
 			},
-			"blocks": map[string]interface{}{
-				"maxBlockGas":              hexutil.Uint64(r.Blocks.MaxBlockGas),
-				"maxEmptyBlockSkipPeriods": hexutil.Uint64(r.Blocks.MaxEmptyBlockSkipPeriod),
+			Blocks: BlocksRules{
+				MaxBlockGas:             hexutil.Uint64(r.Blocks.MaxBlockGas),
+				MaxEmptyBlockSkipPeriod: hexutil.Uint64(r.Blocks.MaxEmptyBlockSkipPeriod),
+			},
+			Economy: EconomyRules{
+				BlockMissedSlack: hexutil.Uint64(r.Economy.BlockMissedSlack),
+				Gas: GasRules{
+					MaxEventGas:          hexutil.Uint64(r.Economy.Gas.MaxEventGas),
+					EventGas:             hexutil.Uint64(r.Economy.Gas.EventGas),
+					ParentGas:            hexutil.Uint64(r.Economy.Gas.ParentGas),
+					ExtraDataGas:         hexutil.Uint64(r.Economy.Gas.ExtraDataGas),
+					BlockVotesBaseGas:    hexutil.Uint64(r.Economy.Gas.BlockVotesBaseGas),
+					BlockVoteGas:         hexutil.Uint64(r.Economy.Gas.BlockVoteGas),
+					EpochVoteGas:         hexutil.Uint64(r.Economy.Gas.EpochVoteGas),
+					MisbehaviourProofGas: hexutil.Uint64(r.Economy.Gas.MisbehaviourProofGas),
+				},
+				MinGasPrice: (*hexutil.Big)(r.Economy.MinGasPrice),
+				ShortGasPower: GasPowerRules{
+					AllocPerSec:        hexutil.Uint64(r.Economy.ShortGasPower.AllocPerSec),
+					MaxAllocPeriod:     hexutil.Uint64(r.Economy.ShortGasPower.MaxAllocPeriod),
+					StartupAllocPeriod: hexutil.Uint64(r.Economy.ShortGasPower.StartupAllocPeriod),
+					MinStartupGas:      hexutil.Uint64(r.Economy.ShortGasPower.MinStartupGas),
+				},
+				LongGasPower: GasPowerRules{
+					AllocPerSec:        hexutil.Uint64(r.Economy.LongGasPower.AllocPerSec),
+					MaxAllocPeriod:     hexutil.Uint64(r.Economy.LongGasPower.MaxAllocPeriod),
+					StartupAllocPeriod: hexutil.Uint64(r.Economy.LongGasPower.StartupAllocPeriod),
+					MinStartupGas:      hexutil.Uint64(r.Economy.LongGasPower.MinStartupGas),
+				},
 			},
 		},
-		"upgrades": r.Upgrades,
+		Upgrades: es.Rules.Upgrades,
 	}
-
-	_ = rules
 
 	res := map[string]interface{}{
 		"epoch":             hexutil.Uint64(epoch),
