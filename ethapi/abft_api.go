@@ -42,22 +42,22 @@ func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNu
 		return nil, nil
 	}
 
-	validators := map[hexutil.Uint64]interface{}{}
+	validatorProfiles := map[hexutil.Uint64]interface{}{}
 	profiles := es.ValidatorProfiles
 	for _, vid := range es.Validators.IDs() {
-		validators[hexutil.Uint64(vid)] = map[string]interface{}{
+		validatorProfiles[hexutil.Uint64(vid)] = map[string]interface{}{
 			"weight": (*hexutil.Big)(profiles[vid].Weight),
 			"pubkey": profiles[vid].PubKey.String(),
 		}
 	}
 
-	validator_state := make([]ValidatorEpochState, len(es.ValidatorStates))
+	validatorState := make([]ValidatorEpochState, len(es.ValidatorStates))
 	for i, vs := range es.ValidatorStates {
 		gas_power_left := GasPowerLeft{}
 		for j, gas := range vs.PrevEpochEvent.GasPowerLeft.Gas {
 			gas_power_left[j] = hexutil.Uint64(gas)
 		}
-		validator_state[i] = ValidatorEpochState{
+		validatorState[i] = ValidatorEpochState{
 			GasRefund: hexutil.Uint64(vs.GasRefund),
 			PrevEpochEvent: EventInfo{
 				ID:           common.Hash(vs.PrevEpochEvent.ID),
@@ -67,14 +67,19 @@ func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNu
 		}
 	}
 
+	validators := make(map[hexutil.Uint64]hexutil.Uint64, len(es.Validators.Values))
+	for k, v := range es.Validators.Values {
+		validators[hexutil.Uint64(k)] = hexutil.Uint64(v)
+	}
+
 	res := map[string]interface{}{
-		"epoch":              hexutil.Uint64(epoch),
-		"epoch_start":        hexutil.Uint64(es.EpochStart),
-		"prev_epoch_start":   hexutil.Uint64(es.PrevEpochStart),
-		"epoch_state_root":   es.EpochStateRoot.String(),
-		"validators":         nil,
-		"validator_profiles": validators,
-		"validator_state":    validator_state,
+		"epoch":             hexutil.Uint64(epoch),
+		"epochStart":        hexutil.Uint64(es.EpochStart),
+		"prevEpochStart":    hexutil.Uint64(es.PrevEpochStart),
+		"epochStateRoot":    es.EpochStateRoot.String(),
+		"validators":        validators,
+		"validatorStates":   validatorState,
+		"validatorProfiles": validatorProfiles,
 	}
 
 	return res, nil
