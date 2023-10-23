@@ -118,6 +118,23 @@ EVM export mode is configured with --export.evm.mode.
 Requires a first argument of the DB directory to write to.
 `,
 			},
+			{
+				Name:      "atroposes",
+				Usage:     "Export atroposes by block",
+				ArgsUsage: "<csv_file>",
+				Action:    utils.MigrateFlags(exportAtroposes),
+				Flags: []cli.Flag{
+					CSVFileFlag,
+					CSVExtendedFlag,
+					MinEpochFlag,
+					MaxEpochFlag,
+				},
+				Description: `
+    opera export atroposes
+
+Requires a first argument of the file to export csv file.
+`,
+			},
 		},
 	}
 	checkCommand = cli.Command{
