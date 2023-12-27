@@ -100,12 +100,14 @@ func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNu
 	}
 
 	validatorProfiles := map[hexutil.Uint64]interface{}{}
+	validators := make(map[hexutil.Uint64]hexutil.Uint64)
 	profiles := es.ValidatorProfiles
 	for _, vid := range es.Validators.IDs() {
 		validatorProfiles[hexutil.Uint64(vid)] = map[string]interface{}{
 			"weight": (*hexutil.Big)(profiles[vid].Weight),
 			"pubkey": profiles[vid].PubKey.String(),
 		}
+		validators[hexutil.Uint64(vid)] = hexutil.Uint64(es.Validators.Get(vid))
 	}
 
 	validatorState := make([]ValidatorEpochState, len(es.ValidatorStates))
@@ -122,11 +124,6 @@ func (s *PublicAbftAPI) GetFullEpochState(ctx context.Context, epoch rpc.BlockNu
 				Time:         hexutil.Uint64(vs.PrevEpochEvent.Time),
 			},
 		}
-	}
-
-	validators := make(map[hexutil.Uint64]hexutil.Uint64, len(es.Validators.Values))
-	for k, v := range es.Validators.Values {
-		validators[hexutil.Uint64(k)] = hexutil.Uint64(v)
 	}
 
 	r := es.Rules
