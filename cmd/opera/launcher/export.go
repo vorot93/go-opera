@@ -2,6 +2,8 @@ package launcher
 
 import (
 	"compress/gzip"
+	"encoding/csv"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -21,6 +23,7 @@ import (
 	"gopkg.in/urfave/cli.v1"
 
 	"github.com/Fantom-foundation/go-opera/gossip"
+	"github.com/Fantom-foundation/go-opera/inter"
 	"github.com/Fantom-foundation/go-opera/utils/dbutil/autocompact"
 )
 
@@ -151,5 +154,77 @@ func exportEvmKeys(ctx *cli.Context) error {
 		}
 	}
 	log.Info("Exported EVM keys", "dir", fn)
+	return nil
+}
+
+func exportAtroposes(ctx *cli.Context) error {
+	cfg := makeAllConfigs(ctx)
+
+	rawDbs := makeDirectDBsProducer(cfg)
+	gdb := makeGossipStore(rawDbs, cfg)
+	defer gdb.Close()
+
+	fileName := ctx.String(CSVFileFlag.Name)
+
+	log.Info("Exporting atroposes data into", "file", fileName)
+
+	// setup writer
+	csvOut, err := os.Create(fileName)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to create file %s.", fileName))
+	}
+	defer csvOut.Close()
+
+	w := csv.NewWriter(csvOut)
+	defer w.Flush()
+
+	var headers []string
+	if ctx.GlobalBool(CSVExtendedFlag.Name) {
+		headers = []string{
+			"epoch",
+			"blockNumber",
+			"atropos",
+			"txs",
+			"gasused",
+		}
+	} else {
+		headers = []string{
+			"blockNumber",
+			"atropos",
+		}
+	}
+	if err := w.Write(headers); err != nil {
+		panic(err)
+	}
+
+	minEpoch := ctx.Uint64(MinEpochFlag.Name)
+	maxEpoch := ctx.Uint64(MaxEpochFlag.Name)
+
+	gdb.ForEachBlock(func(index idx.Block, block *inter.Block) {
+		epoch := block.Atropos.Epoch()
+		if uint64(epoch) >= minEpoch && uint64(epoch) <= maxEpoch {
+			var line []string
+			if ctx.GlobalBool(CSVExtendedFlag.Name) {
+				line = []string{
+					strconv.Itoa(int(epoch)),
+					strconv.Itoa(int(index)),
+					block.Atropos.Hex(),
+					strconv.Itoa(len(block.InternalTxs) + len(block.SkippedTxs) + len(block.Txs)),
+					strconv.Itoa(int(block.GasUsed)),
+				}
+			} else {
+				line = []string{
+					strconv.Itoa(int(index)),
+					block.Atropos.Hex(),
+				}
+			}
+
+			err := w.Write(line)
+			if err != nil {
+				panic(fmt.Sprintf("block %d: %v", index, err))
+			}
+		}
+	})
+
 	return nil
 }

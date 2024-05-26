@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"os"
 	"path"
@@ -132,6 +133,29 @@ var (
 	DBPresetFlag = cli.StringFlag{
 		Name:  "db.preset",
 		Usage: "DBs layout preset ('pbl-1' or 'ldb-1' or 'legacy-ldb' or 'legacy-pbl')",
+	}
+
+	CSVFileFlag = cli.StringFlag{
+		Name:  "atroposes",
+		Usage: "CSV file to export atroposes data by block",
+		Value: "blocks.csv",
+	}
+
+	CSVExtendedFlag = cli.BoolFlag{
+		Name:  "extended",
+		Usage: "Export extended atroposes data",
+	}
+
+	MinEpochFlag = cli.Uint64Flag{
+		Name:  "min-epoch",
+		Usage: "Minimum epoch to export atroposes data",
+		Value: 0,
+	}
+
+	MaxEpochFlag = cli.Uint64Flag{
+		Name:  "max-epoch",
+		Usage: "Maximum epoch to export atroposes data",
+		Value: math.MaxUint64,
 	}
 )
 
